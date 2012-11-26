@@ -19,12 +19,16 @@ class hash(object):
 	
 	# get a hash from the db
 	def get(self, key):
+		self.key = key
 		self.data = self.db.hgetall(key)
 		return self.data
 	
 	# get value for a key
 	def val(self, key):
 		return self.data.get(key) if self.data.get(key) else None
+		
+	def delete(self):
+		self.db.delete(self.key)
 	
 class hashset(object):
 	
@@ -32,7 +36,6 @@ class hashset(object):
 		if redis: self.db = redis
 		if name: self.new(name)
 		self.hashes = []
-		self.setData = []
 	
 	# load a set with range
 	def getRange(self, r1, r2):
@@ -42,6 +45,7 @@ class hashset(object):
 	
 	# remove range from redis
 	def removeRange(self, r1, r2):
+		self.removeHashes()
 		self.db.zremrangebyscore(self.set, r1, r2)
 	
 	# getRange and delete from redis
@@ -56,9 +60,9 @@ class hashset(object):
 		hash.commit()
 		self.db.zadd(self.set, hash.key, hash.score)
 	
-	# remove a hash from redis
-	def delete(self, hashName):
-		self.db.delete(hashName)
+	def removeHashes(self):
+		for h in self.hashes:
+			h.delete()
 		
 	def loadHashes(self):
 		for i in self.setData:
@@ -76,3 +80,6 @@ class hashset(object):
 		
 	def getHash(self, index):
 		return self.hashes[index] if self.hashes[index] else False
+		
+	def getScore(self, name):
+		return self.db.zscore(self.set, name)
